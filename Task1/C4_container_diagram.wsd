@@ -1,0 +1,53 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(business, "Бизнес-пользователи", "Могут работать с данными через витрины")
+
+
+System_Boundary(fin, "Финансовые услуги") {
+    Container(fin_service, "Микросервисы финансовых услуг", "Java + Goland")
+    ContainerDb(fin_db, "База данных финансовых услуг", " Microsoft SQL")
+
+    Rel(fin_service, fin_db, "Исполнение запросов", "SQL")
+}
+
+System_Boundary(med, "Медицинские услуги") {
+    Container(med_service, "Микросервисы медицинских услуг", "Java + Goland")
+    ContainerDb(med_db, "База данных медициннских услуг", " Microsoft SQL")
+
+    Rel(med_service, med_db, "Исполнение запросов", "SQL")
+}
+
+ContainerQueue(data_query, "Шина данных", "Apache Camel")
+
+Container(powerbi, "Клиент для бизнес аналитики", "Power BI")
+
+System_Boundary(data, " Data Lakehouse") {
+    Container(data_hub, "Data Catalog", "Data Hub")
+    Container(data_etl, "ETL/ELT", "Apache Airflow")
+    Container(data_service, "Методанные хранилища", "Apache Iceberg")
+    Container(data_interface, "Система доступ к данных хранилища", "Dremio")
+    ContainerDb(data_db, "Храшлище данных", "S3")
+}
+
+Rel(fin_service, data_query, "Отправка методанных", "")
+Rel(med_service, data_query, "Отправка методанных", "")
+Rel(data_query, data_hub, "Регистрация методанных", "DataHub Kafka Connect")
+
+
+Rel(fin_service, data_query, "Регистрация событий, фактов", "")
+Rel(med_service, data_query, "Регистрация событий, фактов", "")
+Rel(data_query, data_etl, "Регистрация событий, фактов от доменов", "")
+
+Rel(data_service, data_hub, "Использование методанных", "")
+Rel(data_etl, data_service, "Сохранение данных в хранилище", "")
+Rel(data_etl, data_db, "Сохранение данных в хранилище", "")
+
+Rel(data_interface, data_hub, "Поиск методанных", "JSON/HTTP")
+Rel(data_interface, data_db, "Получение данных", "JSON/HTTP")
+
+Rel(powerbi, data_interface, "Получение данных","JSON/HTTP")
+
+Rel(business, powerbi, "Формирование отчетов","")
+
+@enduml
